@@ -1,35 +1,81 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+import "./App.css";
 
-function App() {
-  const [count, setCount] = useState(0)
+const API = "http://localhost:5000/api/places";
+
+// Fix default marker icons in Vite/Leaflet
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
+
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
+
+export default function App() {
+  const [places, setPlaces] = useState([]);
+  const [q, setQ] = useState("");
+  const [category, setCategory] = useState("");
+
+  const load = async () => {
+    const res = await axios.get(API, { params: { q, category } });
+    setPlaces(res.data);
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="container">
+      <h1>Hanoi Tourism</h1>
+      <div className="filters">
+        <input
+          placeholder="Search place..."
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        <input
+          placeholder="Category..."
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
+        <button onClick={load}>Search</button>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
-}
 
-export default App
+      <div className="grid">
+        <div>
+          {places.map((p) => (
+            <div key={p.id} className="card">
+              <h3>{p.name}</h3>
+              <p>{p.description}</p>
+              <small>
+                {p.category} • {p.address}
+              </small>
+            </div>
+          ))}
+        </div>
+
+        <MapContainer
+          center={[21.0285, 105.8542]}
+          zoom={13}
+          style={{ height: "500px", width: "100%" }}
+        >
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          {places.map((p) => (
+            <Marker key={p.id} position={[p.latitude, p.longitude]}>
+              <Popup>{p.name}</Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      </div>
+    </div>
+  );
+}
