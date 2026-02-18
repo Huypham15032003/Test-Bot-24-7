@@ -1,44 +1,27 @@
+using HanoiTourism.Api.Models;
+using HanoiTourism.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddSingleton<PlaceStore>();
+builder.Services.AddCors(o => o.AddPolicy("web", p => p.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+app.UseCors("web");
 
-app.UseHttpsRedirection();
-
-var summaries = new[]
+app.MapGet("/api/places", (string? q, string? category, PlaceStore store) => Results.Ok(store.GetAll(q, category)));
+app.MapGet("/api/places/{id:int}", (int id, PlaceStore store) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+    var place = store.GetById(id);
+    return place is null ? Results.NotFound() : Results.Ok(place);
+});
+app.MapPost("/api/places", (Place place, PlaceStore store) => Results.Created($"/api/places/{store.Create(place).Id}", place));
+app.MapPut("/api/places/{id:int}", (int id, Place place, PlaceStore store) => store.Update(id, place) ? Results.NoContent() : Results.NotFound());
+app.MapDelete("/api/places/{id:int}", (int id, PlaceStore store) => store.Delete(id) ? Results.NoContent() : Results.NotFound());
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
