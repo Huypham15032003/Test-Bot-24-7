@@ -1,0 +1,15 @@
+# OS/editor
+.DS_Store
+*.swp
+*.swo
+
+# .NET
+**/bin/
+**/obj/
+
+# Node
+**/node_modules/
+**/dist/
+
+# Logs
+*.log
