@@ -133,8 +133,10 @@ export default function App() {
 
   return (
     <div className="container">
-      <h1>Hanoi Tourism</h1>
-      <p className="subtitle">Khám phá địa điểm • đánh giá • đặt vé</p>
+      <header className="hero panel">
+        <h1>Hanoi Tourism</h1>
+        <p className="subtitle">Khám phá địa điểm • đánh giá • đặt vé</p>
+      </header>
 
       <section className="panel auth">
         {auth ? (
@@ -142,7 +144,7 @@ export default function App() {
             <div>
               Xin chào <b>{auth.fullName}</b> (@{auth.username})
             </div>
-            <button onClick={logout}>Logout</button>
+            <button className="btn-secondary" onClick={logout}>Logout</button>
           </div>
         ) : (
           <>
@@ -249,7 +251,7 @@ export default function App() {
                   <b>{b.placeName || `Place #${b.placeId}`}</b> • Qty {b.quantity} • Visit {b.visitDate}
                   <div>Total: {Number(b.totalAmount).toLocaleString()} VND</div>
                   <div className="mt8">
-                    <button onClick={() => cancelBooking(b.id)}>Cancel booking</button>
+                    <button className="btn-danger" onClick={() => cancelBooking(b.id)}>Cancel booking</button>
                   </div>
                 </div>
               ))
@@ -265,7 +267,7 @@ export default function App() {
                 <div key={r.id} className="card">
                   <b>Place #{r.placeId}</b> • {"⭐".repeat(r.rating)}
                   <p>{r.comment}</p>
-                  <button onClick={() => deleteMyReview(r.id)}>Delete review</button>
+                  <button className="btn-danger" onClick={() => deleteMyReview(r.id)}>Delete review</button>
                 </div>
               ))
             )}
