@@ -3,7 +3,7 @@
 Phase 1 + Phase 2 scaffold completed:
 - ASP.NET Core Web API (.NET 8)
 - React + Vite frontend
-- Places CRUD + search/filter
+- Places read for all users; Places CRUD restricted to Admin role
 - Basic map (Leaflet)
 - JWT auth (register/login)
 - Reviews (auth required for create/delete own, and list my reviews)
@@ -38,5 +38,6 @@ docker compose up --build
 ## Default auth user
 - username: `admin`
 - password: `admin123`
+- role: `Admin`
 
 > Demo-only auth storage is in-memory. Replace with DB + hashed passwords for production.

@@ -11,7 +11,7 @@ public class AuthService
     private readonly IConfiguration _config;
     private readonly List<User> _users = new()
     {
-        new User { Id = 1, Username = "admin", Password = "admin123", FullName = "System Admin" }
+        new User { Id = 1, Username = "admin", Password = "admin123", FullName = "System Admin", Role = "Admin" }
     };
 
     public AuthService(IConfiguration config)
@@ -29,7 +29,8 @@ public class AuthService
             Id = _users.MaxBy(x => x.Id)?.Id + 1 ?? 1,
             Username = request.Username.Trim(),
             Password = request.Password,
-            FullName = request.FullName.Trim()
+            FullName = request.FullName.Trim(),
+            Role = "User"
         };
 
         _users.Add(user);
@@ -42,7 +43,7 @@ public class AuthService
             u.Username.Equals(request.Username, StringComparison.OrdinalIgnoreCase)
             && u.Password == request.Password);
 
-        return user is null ? null : new AuthResponse(GenerateJwt(user), user.Username, user.FullName);
+        return user is null ? null : new AuthResponse(GenerateJwt(user), user.Username, user.FullName, user.Role);
     }
 
     private string GenerateJwt(User user)
@@ -55,7 +56,8 @@ public class AuthService
         {
             new(JwtRegisteredClaimNames.Sub, user.Username),
             new(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new("fullName", user.FullName)
+            new("fullName", user.FullName),
+            new(ClaimTypes.Role, user.Role)
         };
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));

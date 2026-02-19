@@ -41,7 +41,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+});
 
 var app = builder.Build();
 
@@ -83,13 +86,16 @@ app.MapGet("/api/places/{id:int}", (int id, PlaceStore store) =>
 });
 
 app.MapPost("/api/places", (Place place, PlaceStore store) =>
-    Results.Created($"/api/places/{store.Create(place).Id}", place));
+    Results.Created($"/api/places/{store.Create(place).Id}", place))
+    .RequireAuthorization("AdminOnly");
 
 app.MapPut("/api/places/{id:int}", (int id, Place place, PlaceStore store) =>
-    store.Update(id, place) ? Results.NoContent() : Results.NotFound());
+    store.Update(id, place) ? Results.NoContent() : Results.NotFound())
+    .RequireAuthorization("AdminOnly");
 
 app.MapDelete("/api/places/{id:int}", (int id, PlaceStore store) =>
-    store.Delete(id) ? Results.NoContent() : Results.NotFound());
+    store.Delete(id) ? Results.NoContent() : Results.NotFound())
+    .RequireAuthorization("AdminOnly");
 
 app.MapGet("/api/reviews", (int placeId, ReviewStore reviews) =>
     Results.Ok(reviews.GetByPlace(placeId)));
