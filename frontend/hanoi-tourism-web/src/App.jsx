@@ -37,6 +37,7 @@ export default function App() {
   const [visitDate, setVisitDate] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [myBookings, setMyBookings] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
 
   const headers = useMemo(
     () => (auth?.token ? { Authorization: `Bearer ${auth.token}` } : {}),
@@ -60,12 +61,19 @@ export default function App() {
     setMyBookings(res.data);
   };
 
+  const loadMyReviews = async () => {
+    if (!auth?.token) return;
+    const res = await api.get("/api/reviews/my", { headers });
+    setMyReviews(res.data);
+  };
+
   useEffect(() => {
     loadPlaces();
   }, []);
 
   useEffect(() => {
     loadMyBookings();
+    loadMyReviews();
   }, [auth?.token]);
 
   const register = async () => {
@@ -83,6 +91,7 @@ export default function App() {
     setAuth(null);
     localStorage.removeItem("auth");
     setMyBookings([]);
+    setMyReviews([]);
   };
 
   const submitReview = async () => {
@@ -109,6 +118,17 @@ export default function App() {
     );
     await loadMyBookings();
     alert("Đặt vé thành công!");
+  };
+
+  const cancelBooking = async (id) => {
+    await api.delete(`/api/bookings/${id}`, { headers });
+    await loadMyBookings();
+  };
+
+  const deleteMyReview = async (id) => {
+    await api.delete(`/api/reviews/${id}`, { headers });
+    await loadMyReviews();
+    if (selectedPlaceId) await loadReviews(selectedPlaceId);
   };
 
   return (
@@ -218,19 +238,39 @@ export default function App() {
       </div>
 
       {auth && (
-        <section className="panel mt16">
-          <h2>My bookings</h2>
-          {myBookings.length === 0 ? (
-            <p>Chưa có booking.</p>
-          ) : (
-            myBookings.map((b) => (
-              <div key={b.id} className="card">
-                <b>Place #{b.placeId}</b> • Qty {b.quantity} • Visit {b.visitDate}
-                <div>Total: {Number(b.totalAmount).toLocaleString()} VND</div>
-              </div>
-            ))
-          )}
-        </section>
+        <>
+          <section className="panel mt16">
+            <h2>My bookings</h2>
+            {myBookings.length === 0 ? (
+              <p>Chưa có booking.</p>
+            ) : (
+              myBookings.map((b) => (
+                <div key={b.id} className="card">
+                  <b>{b.placeName || `Place #${b.placeId}`}</b> • Qty {b.quantity} • Visit {b.visitDate}
+                  <div>Total: {Number(b.totalAmount).toLocaleString()} VND</div>
+                  <div className="mt8">
+                    <button onClick={() => cancelBooking(b.id)}>Cancel booking</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </section>
+
+          <section className="panel mt16">
+            <h2>My reviews</h2>
+            {myReviews.length === 0 ? (
+              <p>Bạn chưa có review nào.</p>
+            ) : (
+              myReviews.map((r) => (
+                <div key={r.id} className="card">
+                  <b>Place #{r.placeId}</b> • {"⭐".repeat(r.rating)}
+                  <p>{r.comment}</p>
+                  <button onClick={() => deleteMyReview(r.id)}>Delete review</button>
+                </div>
+              ))
+            )}
+          </section>
+        </>
       )}
     </div>
   );

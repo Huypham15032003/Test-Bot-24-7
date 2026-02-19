@@ -6,8 +6,8 @@ Phase 1 + Phase 2 scaffold completed:
 - Places CRUD + search/filter
 - Basic map (Leaflet)
 - JWT auth (register/login)
-- Reviews (auth required for create)
-- Bookings (auth required)
+- Reviews (auth required for create/delete own, and list my reviews)
+- Bookings (auth required, list my bookings, cancel own booking)
 - Global error handling middleware + console logging
 - Docker + docker-compose
 - GitHub Actions CI

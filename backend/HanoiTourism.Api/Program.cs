@@ -94,6 +94,14 @@ app.MapDelete("/api/places/{id:int}", (int id, PlaceStore store) =>
 app.MapGet("/api/reviews", (int placeId, ReviewStore reviews) =>
     Results.Ok(reviews.GetByPlace(placeId)));
 
+app.MapGet("/api/reviews/my", (ClaimsPrincipal user, ReviewStore reviews) =>
+{
+    var username = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Name) ?? user.FindFirstValue("unique_name");
+    if (string.IsNullOrWhiteSpace(username)) return Results.Unauthorized();
+
+    return Results.Ok(reviews.GetByUser(username));
+}).RequireAuthorization();
+
 app.MapPost("/api/reviews", (Review review, ClaimsPrincipal user, ReviewStore reviews, PlaceStore places) =>
 {
     var username = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Name) ?? user.FindFirstValue("unique_name");
@@ -106,11 +114,39 @@ app.MapPost("/api/reviews", (Review review, ClaimsPrincipal user, ReviewStore re
     return Results.Created($"/api/reviews/{created.Id}", created);
 }).RequireAuthorization();
 
-app.MapGet("/api/bookings/my", (ClaimsPrincipal user, BookingStore bookings) =>
+app.MapDelete("/api/reviews/{id:int}", (int id, ClaimsPrincipal user, ReviewStore reviews) =>
 {
     var username = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Name) ?? user.FindFirstValue("unique_name");
     if (string.IsNullOrWhiteSpace(username)) return Results.Unauthorized();
-    return Results.Ok(bookings.GetByUser(username));
+
+    var review = reviews.GetById(id);
+    if (review is null) return Results.NotFound();
+    if (!review.Username.Equals(username, StringComparison.OrdinalIgnoreCase))
+        return Results.Forbid();
+
+    return reviews.Delete(id) ? Results.NoContent() : Results.NotFound();
+}).RequireAuthorization();
+
+app.MapGet("/api/bookings/my", (ClaimsPrincipal user, BookingStore bookings, PlaceStore places) =>
+{
+    var username = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Name) ?? user.FindFirstValue("unique_name");
+    if (string.IsNullOrWhiteSpace(username)) return Results.Unauthorized();
+
+    var myBookings = bookings.GetByUser(username)
+        .Select(b => new
+        {
+            b.Id,
+            b.PlaceId,
+            PlaceName = places.GetById(b.PlaceId)?.Name ?? "Unknown",
+            b.Username,
+            b.VisitorName,
+            b.Quantity,
+            b.VisitDate,
+            b.TotalAmount,
+            b.CreatedAtUtc
+        });
+
+    return Results.Ok(myBookings);
 }).RequireAuthorization();
 
 app.MapPost("/api/bookings", (Booking booking, ClaimsPrincipal user, BookingStore bookings, PlaceStore places) =>
@@ -121,11 +157,26 @@ app.MapPost("/api/bookings", (Booking booking, ClaimsPrincipal user, BookingStor
     var place = places.GetById(booking.PlaceId);
     if (place is null) return Results.NotFound(new { message = "Place not found" });
     if (booking.Quantity <= 0) return Results.BadRequest(new { message = "Quantity must be > 0" });
+    if (booking.VisitDate < DateOnly.FromDateTime(DateTime.UtcNow.Date))
+        return Results.BadRequest(new { message = "Visit date cannot be in the past" });
 
     booking.Username = username;
     booking.TotalAmount = place.TicketPrice * booking.Quantity;
     var created = bookings.Create(booking);
     return Results.Created($"/api/bookings/{created.Id}", created);
+}).RequireAuthorization();
+
+app.MapDelete("/api/bookings/{id:int}", (int id, ClaimsPrincipal user, BookingStore bookings) =>
+{
+    var username = user.Identity?.Name ?? user.FindFirstValue(ClaimTypes.Name) ?? user.FindFirstValue("unique_name");
+    if (string.IsNullOrWhiteSpace(username)) return Results.Unauthorized();
+
+    var booking = bookings.GetById(id);
+    if (booking is null) return Results.NotFound();
+    if (!booking.Username.Equals(username, StringComparison.OrdinalIgnoreCase))
+        return Results.Forbid();
+
+    return bookings.Delete(id) ? Results.NoContent() : Results.NotFound();
 }).RequireAuthorization();
 
 app.Run();
