@@ -23,10 +23,13 @@ dotnet run --urls=http://0.0.0.0:5000
 ### Frontend
 ```bash
 cd frontend/hanoi-tourism-web
-cp .env.example .env
 npm install
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
+
+By default in development, Vite proxy is enabled:
+- `/api/*` from frontend is proxied to `http://localhost:5000`
+- You can still override API base via `VITE_API_URL` if needed.
 
 ## Run with Docker
 ```bash
